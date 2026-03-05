@@ -32,6 +32,7 @@ Analyze this receipt image and extract the following fields. Return ONLY a JSON 
 
 {
   "date": "YYYY-MM-DD",
+  "date_raw": "The date exactly as printed on the receipt",
   "vendor_name": "The legal entity / registered business name",
   "brand_name": "The trade or brand name (if different from vendor_name)",
   "tin": "TIN in format XXX-XXX-XXX-XXXXX (taxpayer identification number of the vendor)",
@@ -43,7 +44,8 @@ Analyze this receipt image and extract the following fields. Return ONLY a JSON 
 }
 
 Important rules:
-- "date" must be the transaction date in YYYY-MM-DD format
+- "date" must be the transaction date in YYYY-MM-DD format. Try your best to interpret the date, but if the month/day are ambiguous (both ≤ 12), make your best guess
+- "date_raw" must be the date EXACTLY as printed on the receipt, character for character (e.g., "03/05/2026", "MAR 05, 2026", "05-03-26"). Do not reformat this
 - "vendor_name" PRIORITY ORDER — use the FIRST one you find:
   1. The entity after "Operated by", "A subsidiary of", "A franchise of", "Managed by", "A licensee of"
   2. The BIR-registered business name (usually the legal entity at the top, often ending in Inc., Corp., Co., etc.)
@@ -74,6 +76,7 @@ class ReceiptData:
     address: str
     items_description: str
     source_file: str
+    date_raw: Optional[str] = None
     brand_name: Optional[str] = None
     match_confidence: Optional[str] = None  # "high", "medium", "low", "new"
     match_notes: Optional[str] = None  # Explanation of how the match was resolved
@@ -197,8 +200,43 @@ def scan_receipt(client: anthropic.Anthropic, image_path: Path) -> ReceiptData:
         address=data.get("address", ""),
         items_description=data.get("items_description", ""),
         source_file=str(image_path.name),
+        date_raw=data.get("date_raw"),
         brand_name=data.get("brand_name"),
     )
+
+
+def resolve_date(receipt: ReceiptData, report_month: int, report_year: int) -> None:
+    """Resolve ambiguous dates using the report month as a tiebreaker.
+
+    If Claude returned a date whose month doesn't match the report month,
+    and the raw date string is ambiguous (both parts ≤ 12), try swapping
+    month and day to see if the other interpretation matches.
+    """
+    if not receipt.date or not receipt.date_raw:
+        return
+
+    try:
+        from datetime import datetime
+        parsed = datetime.strptime(receipt.date, "%Y-%m-%d")
+    except ValueError:
+        return
+
+    # Already matches the report month — no action needed
+    if parsed.month == report_month and parsed.year == report_year:
+        return
+
+    # Check if the date is ambiguous (day ≤ 12, so month/day could be swapped)
+    if parsed.day > 12:
+        return  # Unambiguous — day can't be a month
+
+    # Try swapping month and day
+    try:
+        from datetime import datetime as dt
+        swapped = parsed.replace(month=parsed.day, day=parsed.month)
+        if swapped.month == report_month and swapped.year == report_year:
+            receipt.date = swapped.strftime("%Y-%m-%d")
+    except ValueError:
+        pass  # Invalid date after swap (e.g., day 31 as month)
 
 
 def find_receipt_files(folder: Path) -> list[Path]:

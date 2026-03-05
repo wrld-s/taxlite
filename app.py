@@ -15,7 +15,7 @@ sys.path.insert(0, str(Path(__file__).parent / "src"))
 import streamlit as st
 
 from taxlite.excel import generate_excel
-from taxlite.scanner import ReceiptData, scan_receipt, SUPPORTED_EXTENSIONS
+from taxlite.scanner import ReceiptData, scan_receipt, resolve_date, SUPPORTED_EXTENSIONS
 from taxlite.vendors import Vendor, VendorDB, normalize_tin, format_tin, is_valid_tin
 
 # --- Page config ---
@@ -78,6 +78,9 @@ if uploaded and st.button("Scan Receipts", type="primary", use_container_width=T
         try:
             receipt = scan_receipt(client, tmp_path)
             receipt.source_file = file.name
+
+            # --- Resolve ambiguous dates using report month ---
+            resolve_date(receipt, month.month, month.year)
 
             # --- Enhanced vendor matching pipeline ---
             result = vendor_db.match_receipt(
