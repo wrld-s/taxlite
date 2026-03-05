@@ -1,0 +1,21 @@
+[project]
+name = "taxlite"
+version = "0.1.0"
+description = "Receipt OCR to Excel tool for tax shield reimbursement"
+requires-python = ">=3.9"
+dependencies = [
+    "anthropic>=0.40.0",
+    "openpyxl>=3.1.0",
+    "Pillow>=10.0.0",
+    "PyMuPDF>=1.24.0",
+]
+
+[project.scripts]
+taxlite = "taxlite.cli:main"
+
+[build-system]
+requires = ["setuptools>=68.0"]
+build-backend = "setuptools.backends._legacy:_Backend"
+
+[tool.setuptools.packages.find]
+where = ["src"]

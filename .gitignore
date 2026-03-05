@@ -1,0 +1,19 @@
+.env
+.installed
+__pycache__/
+*.pyc
+*.egg-info/
+dist/
+build/
+.DS_Store
+.streamlit/secrets.toml
+.streamlit/credentials.toml
+
+# Bundled distribution files (not needed for Streamlit Cloud)
+python/
+deps/
+TaxLite.zip
+TaxLite.exe
+test_output.xlsx
+testreceipts/
+.claude/

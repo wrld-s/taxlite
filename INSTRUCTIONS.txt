@@ -1,0 +1,74 @@
+================================================================
+  TaxLite — Receipt Scanner for Tax Shield Reimbursement
+================================================================
+
+Upload photos of your receipts, and TaxLite will automatically
+read them and generate the Excel file ready for submission.
+
+────────────────────────────────────────────────────────────────
+  HOW TO START
+────────────────────────────────────────────────────────────────
+
+1. Unzip TaxLite.zip to any folder (e.g., Desktop)
+
+2. Double-click TaxLite.bat
+
+3. That's it.
+   → Python will be installed automatically if needed
+   → Dependencies will be installed on the first run
+   → A browser tab will open with the app
+
+────────────────────────────────────────────────────────────────
+  HOW TO USE
+────────────────────────────────────────────────────────────────
+
+1. Double-click TaxLite.bat to start
+
+2. Set the Report Month in the sidebar (click >> at top-left)
+   (e.g., 2026-03 for March 2026)
+
+3. Click "Browse files" or drag & drop your receipt photos
+   → Supports: JPG, PNG, HEIC (iPhone photos), PDF
+
+4. Click "Scan Receipts" and wait
+   → Each receipt takes ~5 seconds
+
+5. Review the results table — verify amounts are correct
+
+6. Click "Download Excel" to save the file
+
+7. Open the Excel file, review, then submit per usual process
+
+────────────────────────────────────────────────────────────────
+  TIPS
+────────────────────────────────────────────────────────────────
+
+• Take clear, well-lit photos of receipts
+• Make sure the TIN, amounts, and date are readable
+• One receipt per photo works best
+• The tool knows 214 registered vendors — it will auto-fill
+  TIN, address, and category for known vendors
+• New vendors are automatically saved for future use
+
+────────────────────────────────────────────────────────────────
+  TROUBLESHOOTING
+────────────────────────────────────────────────────────────────
+
+App doesn't open in the browser
+  → Manually go to http://localhost:8501
+
+"dependency install failed"
+  → Check your internet connection and double-click TaxLite.bat again
+
+To stop the app
+  → Close the black command window, or press Ctrl+C in it
+
+────────────────────────────────────────────────────────────────
+  FOR MAC USERS
+────────────────────────────────────────────────────────────────
+
+Open Terminal, navigate to the TaxLite folder, and run:
+  chmod +x TaxLite.sh
+  ./TaxLite.sh
+
+================================================================

@@ -1,0 +1,6 @@
+anthropic
+openpyxl
+Pillow
+PyMuPDF
+pillow-heif
+streamlit
