@@ -32,7 +32,8 @@ Analyze this receipt image and extract the following fields. Return ONLY a JSON 
 
 {
   "date": "YYYY-MM-DD",
-  "vendor_name": "Full registered business name as printed on the receipt",
+  "vendor_name": "The legal entity / registered business name",
+  "brand_name": "The trade or brand name (if different from vendor_name)",
   "tin": "TIN in format XXX-XXX-XXX-XXXXX (taxpayer identification number of the vendor)",
   "total_amount": 0.00,
   "vat_amount": 0.00,
@@ -43,8 +44,12 @@ Analyze this receipt image and extract the following fields. Return ONLY a JSON 
 
 Important rules:
 - "date" must be the transaction date in YYYY-MM-DD format
-- "vendor_name" is the registered business name (usually at the top of the receipt), NOT the trade/brand name if different
-- "tin" is the vendor's TIN, usually printed near the business name. Format: XXX-XXX-XXX-XXXXX
+- "vendor_name" PRIORITY ORDER — use the FIRST one you find:
+  1. The entity after "Operated by", "A subsidiary of", "A franchise of", "Managed by", "A licensee of"
+  2. The BIR-registered business name (usually the legal entity at the top, often ending in Inc., Corp., Co., etc.)
+  3. The trade/brand name ONLY if no legal entity name is visible
+- "brand_name" is the trade/brand name shown on the receipt (e.g., "Starbucks", "Jollibee"). If the brand name is the same as vendor_name, set to null
+- "tin" is the VENDOR's TIN (the seller, NOT the buyer). It is usually printed near the vendor's business name at the top. Format: XXX-XXX-XXX-XXXXX. IMPORTANT: receipts may show TWO TINs — the vendor's and the buyer's. The buyer TIN often appears near "Sold to", "Customer TIN", or "Buyer's TIN". Always pick the one near the vendor/business name at the top
 - "total_amount" is the TOTAL amount paid (the final amount including VAT). Use the number after "TOTAL" or "AMOUNT DUE"
 - "vat_amount" is the 12% VAT amount. Look for "VAT 12%", "VAT AMT", "VAT Amount", or "Output Tax". If the receipt shows "VATable Sales" instead, compute: vat_amount = vatable_sales * 0.12. If the receipt is VAT-exempt or non-VAT, set to 0.00
 - "receipt_number" is the OR number, SI number, or Invoice number. Look for "OR No.", "SI No.", "Invoice No.", or similar
@@ -66,6 +71,9 @@ class ReceiptData:
     address: str
     items_description: str
     source_file: str
+    brand_name: Optional[str] = None
+    match_confidence: Optional[str] = None  # "high", "medium", "low", "new"
+    match_notes: Optional[str] = None  # Explanation of how the match was resolved
 
 
 MAX_IMAGE_BYTES = 4_800_000  # Stay under Claude's 5MB limit
@@ -186,6 +194,7 @@ def scan_receipt(client: anthropic.Anthropic, image_path: Path) -> ReceiptData:
         address=data.get("address", ""),
         items_description=data.get("items_description", ""),
         source_file=str(image_path.name),
+        brand_name=data.get("brand_name"),
     )
 
 

@@ -16,7 +16,7 @@ import streamlit as st
 
 from taxlite.excel import generate_excel
 from taxlite.scanner import ReceiptData, scan_receipt, SUPPORTED_EXTENSIONS
-from taxlite.vendors import Vendor, VendorDB
+from taxlite.vendors import Vendor, VendorDB, normalize_tin, format_tin, is_valid_tin
 
 # --- Page config ---
 st.set_page_config(page_title="TaxLite", page_icon="🧾", layout="centered")
@@ -79,17 +79,31 @@ if uploaded and st.button("Scan Receipts", type="primary", use_container_width=T
             receipt = scan_receipt(client, tmp_path)
             receipt.source_file = file.name
 
-            # Cross-reference vendor DB
-            match = vendor_db.lookup(receipt.vendor_name)
-            if match:
-                if match.tin:
-                    receipt.tin = match.tin
-                if match.address:
-                    receipt.address = match.address
-                if match.category:
-                    receipt.items_description = match.category
+            # --- Enhanced vendor matching pipeline ---
+            result = vendor_db.match_receipt(
+                ocr_tin=receipt.tin,
+                ocr_vendor_name=receipt.vendor_name,
+                ocr_brand_name=receipt.brand_name,
+            )
+
+            receipt.match_confidence = result.confidence
+            receipt.match_notes = result.notes
+
+            if result.vendor:
+                # Use DB values (more reliable than OCR)
+                receipt.vendor_name = result.vendor.name
+                if result.vendor.tin:
+                    receipt.tin = result.vendor.tin
+                if result.vendor.address:
+                    receipt.address = result.vendor.address
+                if result.vendor.category:
+                    receipt.items_description = result.vendor.category
             else:
-                if receipt.vendor_name and receipt.tin:
+                # New vendor — validate TIN format before saving
+                tin_digits = normalize_tin(receipt.tin)
+                if tin_digits and is_valid_tin(tin_digits):
+                    receipt.tin = format_tin(tin_digits)
+                if receipt.vendor_name:
                     vendor_db.add(Vendor(
                         name=receipt.vendor_name,
                         tin=receipt.tin,
@@ -117,17 +131,29 @@ if uploaded and st.button("Scan Receipts", type="primary", use_container_width=T
 
         # Show results table
         st.subheader(f"Scanned {len(results)} receipt(s)")
+        CONFIDENCE_ICONS = {"high": "✅", "medium": "⚠️", "low": "❓", "new": "🆕"}
         table_data = []
         for r in sorted(results, key=lambda x: x.date or ""):
+            icon = CONFIDENCE_ICONS.get(r.match_confidence, "")
             table_data.append({
                 "Date": r.date,
                 "Vendor": r.vendor_name,
+                "TIN": r.tin,
                 "Amount": f"{r.total_amount:,.2f}",
                 "VAT": f"{r.vat_amount:,.2f}",
                 "Receipt #": r.receipt_number,
                 "Category": r.items_description,
+                "Match": icon,
             })
         st.table(table_data)
+
+        # Show match details for non-high-confidence results
+        flagged = [r for r in results if r.match_confidence and r.match_confidence != "high"]
+        if flagged:
+            with st.expander(f"Match details ({len(flagged)} flagged)", expanded=False):
+                for r in flagged:
+                    icon = CONFIDENCE_ICONS.get(r.match_confidence, "")
+                    st.markdown(f"{icon} **{r.source_file}** → {r.match_notes}")
 
         # Summary
         total = sum(r.total_amount for r in results)
