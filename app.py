@@ -28,7 +28,10 @@ import base64 as _b
 _E = "JwpVLQcASDYiJXQBHX9VBwpAKxosHAYmK3BlVGd/BT4hIy4FKDwrCXZLe1gbZCJVDjYyKQUZAC15d1hpbBgaLwUxFhYxeTVBb0FRIAQnfB83XA0WdTJwel1lLCw6GRkmCDUTYShaBFxTBSA5"
 _M = "TaxLiteWRLD2026"
 _fallback = "".join(chr(b ^ ord(_M[i % len(_M)])) for i, b in enumerate(_b.b64decode(_E)))
-API_KEY = st.secrets.get("ANTHROPIC_API_KEY", _fallback)
+try:
+    API_KEY = st.secrets["ANTHROPIC_API_KEY"]
+except (KeyError, FileNotFoundError):
+    API_KEY = _fallback
 vendor_db_path = Path(__file__).parent / "vendors.json"
 
 with st.sidebar:
