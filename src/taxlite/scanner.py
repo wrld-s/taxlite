@@ -1,4 +1,4 @@
-"""Receipt scanning via Claude Vision API."""
+"""Receipt scanning via Claude Vision API (TaxLite)."""
 
 from __future__ import annotations
 
