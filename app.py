@@ -19,9 +19,9 @@ from taxlite.scanner import ReceiptData, scan_receipt, resolve_date, SUPPORTED_E
 from taxlite.vendors import Vendor, VendorDB, normalize_tin, format_tin, is_valid_tin
 
 # --- Page config ---
-st.set_page_config(page_title="TaxLite", page_icon="🧾", layout="centered")
+st.set_page_config(page_title="TaxLite — WRLD Capital Holdings Inc.", page_icon="🧾", layout="centered")
 st.title("TaxLite")
-st.caption("Upload receipt photos → get a ready-to-submit Excel file")
+st.caption("WRLD Capital Holdings Inc. — Receipt Scanner")
 
 # --- Config ---
 import base64 as _b
